@@ -20,6 +20,8 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
+// register
+
 const registerUser = asyncHandler(async (req, res) => {
   //get user detail from frontend
   //validation --not empty
@@ -95,6 +97,8 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
 });
 
+// login
+
 const loginUser = asyncHandler(async (req, res) => {
   //req.body-->data
   //username or email based login
@@ -118,7 +122,29 @@ const loginUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
   );
-  
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+  const option = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, option)
+    .cookie("refreshToken", refreshToken, option)
+    .json(
+      new ApiResponse(
+        200,
+        { user: accessToken, refreshToken, loggedInUser },
+        "User LoggedIn Successfully"
+      )
+    );
 });
 
-export { registerUser };
+//logout
+const logoutUser=asyncHandler(async(req,res)=>{
+    
+})
+
+export { registerUser,loginUser };
