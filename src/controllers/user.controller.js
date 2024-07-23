@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary/cloudinary.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
@@ -218,12 +218,11 @@ const chnageCurrentPassword = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "Password Changed Successfully"));
 });
+
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(
-      new ApiResponse(200, { user: req.user }, "Current user fetch Sucessfully")
-    );
+    .json(new ApiResponse(200, req.user, "Current user fetch Sucessfully"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -299,4 +298,5 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
+  updateUserCoverImage,
 };
