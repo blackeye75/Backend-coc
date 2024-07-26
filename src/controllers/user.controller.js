@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
   //return res
 
   const { fullName, email, password, username } = req.body;
-  console.log(password, email);
+  // console.log(password, email);
 
   if (
     [fullName, username, email, password].some((field) => field?.trim() === "")
@@ -54,7 +54,7 @@ const registerUser = asyncHandler(async (req, res) => {
       "User With Given Username or email already existed "
     );
   }
-  console.log(req.files);
+  // console.log(req.files);
   const avatarLocalPath = req.files?.avatar[0]?.path;
   //   const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
@@ -169,16 +169,19 @@ const logoutUser = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
+  // console.log(req.cookies);
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
   if (!incomingRefreshToken) {
     throw new ApiError(401, "unauthorized Request");
   }
+  // console.log(incomingRefreshToken);
   try {
     const decodedToken = jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
+    // console.log(decodedToken);
     const user = await User.findById(decodedToken?._id);
     if (!user) {
       throw new ApiError(401, "Inavalid Refresh Token");
@@ -190,18 +193,20 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       httpOnly: true,
       secure: true,
     };
-    const { accessToken, newRefreshToken } =
+    const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessAndRefreshToken(user._id);
-    return (
-      res.status(200).cookie("refreshToken", newRefreshToken, option),
-      cookie("accessToken", accessToken, option).json(
+    // console.log(newRefreshToken);
+    return res
+      .status(200)
+      .cookie("refreshToken", newRefreshToken, option)
+      .cookie("accessToken", accessToken, option)
+      .json(
         new ApiResponse(
           200,
           { accessToken, refreshToken: newRefreshToken },
           "Access Token Refreshed"
         )
-      )
-    );
+      );
   } catch (error) {
     throw new ApiError(401, error?.message || "Invalid Refresh Token");
   }
@@ -219,10 +224,11 @@ const chnageCurrentPassword = asyncHandler(async (req, res) => {
   await user.save({ validateBeforeSave: true });
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Password Changed Successfully"));
+    .json(new ApiResponse(200, user, "Password Changed Successfully"));
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
+  // console.log(req.user);
   return res
     .status(200)
     .json(new ApiResponse(200, req.user, "Current user fetch Sucessfully"));
@@ -233,13 +239,15 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
   if (!fullName || !email) {
     throw new ApiError(400, "All Feilds Are required");
   }
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: { fullName, email },
     },
     { new: true }
   ).select("-password");
+  // const user = await User.findById(req.user._id)
+  // console.log(user);
 
   return res
     .status(200)
@@ -248,6 +256,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
+  console.log(req.file.path);
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is Missing");
   }
@@ -309,7 +318,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         from: "subscriptions",
         localField: "_id",
         foreignField: "channel",
-        as: "subscriber",
+        as: "subscribers",
       },
     },
     {
@@ -326,7 +335,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
           $size: "$subscribers",
         },
         channelsSubscribedToCount: {
-          $size: "subscribedTo",
+          $size: "$subscribedTo",
         },
         isSubscribed: {
           $cond: {
@@ -392,7 +401,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
           {
             $addFields: {
               owner: {
-                $first: $owner,
+                $first: "$owner",
               },
             },
           },
@@ -403,8 +412,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, user[0].watchHistory),
-      "watch History Fetched successfully"
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "watch History Fetched successfully"
+      )
     );
 });
 
